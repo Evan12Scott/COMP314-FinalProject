@@ -1,3 +1,4 @@
+*.csv
 ############### MAC GITIGNORE ###################
 # General
 .DS_Store
