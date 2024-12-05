@@ -1,4 +1,5 @@
 library(dplyr)
+library(tidyverse)
 # Evan
 departments <- read.csv('departments.csv')
 aisles <- read.csv('aisles.csv')
@@ -8,10 +9,6 @@ products <- read.csv('products.csv')
 
 # Cleaning
 
-# Remove eval_set column because not relevant
-orders_cleaned <- orders_cleaned %>%
-  select(-eval_set)
-str(orders_cleaned)
 
 # Check and handle NAs in tables
 sum(is.na(departments))
@@ -23,6 +20,11 @@ sum(is.na(products))
 
 orders_cleaned <- na.omit(orders)
 sum(is.na(orders_cleaned))
+
+# Remove eval_set column because not relevant
+orders_cleaned <- orders_cleaned %>%
+  select(-eval_set)
+str(orders_cleaned)
 
 # Table structure and merge aisles and departments tables into the tables that reference them to reduce table count
 str(aisles)
