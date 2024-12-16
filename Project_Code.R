@@ -98,6 +98,7 @@ summary_orders <- sqldf('
                         COUNT(DISTINCT user_id) AS total_customers
                         FROM orders_cleaned'
                         )
+summary_orders
 
 avg_order_size <- sqldf('
                         SELECT AVG(order_size) AS avg_order_size
@@ -107,7 +108,7 @@ avg_order_size <- sqldf('
                           GROUP BY order_id
                           )'
                         )
-
+avg_order_size
 avg_order_size_val <- avg_order_size$avg_order_size
 
 summary_products <- sqldf('SELECT COUNT(*) AS total_products,
@@ -115,6 +116,7 @@ summary_products <- sqldf('SELECT COUNT(*) AS total_products,
                           COUNT(DISTINCT aisle) AS total_aisles
                           FROM products_cleaned'
                           )
+summary_products
 
 # Combine important metrics/aggregations from the summary statistics of the different tables into one structure
 summary_table <- tibble(
@@ -157,6 +159,7 @@ corr_numeric_data <- sqldf('
                            FROM orders_cleaned o
                            INNER JOIN customer_order_sum s ON o.order_id = s.order_id'
                            )
+head(corr_numeric_data)
 
 corr_matrix <- cor(corr_numeric_data)
 
@@ -198,6 +201,8 @@ boxplot_data$order_size_in_buckets <- factor(
   ordered = TRUE
 )
 
+head(boxplot_data)
+
 ggplot(boxplot_data, aes(x = factor(order_size_in_buckets), y = days_since_prior_order)) +
   geom_boxplot(fill = 'lightblue') +
   labs(title = 'Order Size vs Days Between Orders',
@@ -220,6 +225,8 @@ stacked_hist_data <- sqldf('
                ORDER BY add_to_cart_order, department'
                )
 
+head(stacked_hist_data)
+
 ggplot(stacked_hist_data, aes(x = add_to_cart_order, y = proportion, fill = factor(department))) +
   geom_bar(stat = 'identity') + 
   labs(title = 'Department Add-To-Cart Order Spread',
@@ -227,19 +234,21 @@ ggplot(stacked_hist_data, aes(x = add_to_cart_order, y = proportion, fill = fact
        y = 'Proportion') + 
   scale_fill_discrete(name = 'Department')
 
-# Visualization 5: Violin
+# Visualization 5: Bar
 
-violin_data <- sqldf('
+# Extract popularity across days of the week based on product traffic
+bar_data <- sqldf('
   SELECT o.order_day, COUNT(p.product_id) AS num_products
   FROM orders_cleaned o
   JOIN order_products_train p ON o.order_id = p.order_id
   GROUP BY o.order_day
 ')
+bar_data
 
-# Create a violin plot
-ggplot(violin_data, aes(x = factor(order_day, levels = 1:7), y = num_products)) +
-  geom_violin(trim = FALSE, fill = "skyblue", alpha = 0.7) +  # Violin plot
-  labs(title = "Distribution of Products Ordered Over Days of the Week", x = "Day of the Week", y = "Number of Products Ordered") +
+
+ggplot(bar_data, aes(x = order_day, y = num_products)) +
+  geom_bar(stat = "identity", fill = "skyblue", alpha = 0.7) +
+  labs(title = "Total Number of Products Ordered Per Day", x = "Day of the Week", y = "Number of Products Ordered") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -265,6 +274,8 @@ top_co_occurrence <- sqldf('
   JOIN products_cleaned p1 ON c.product_id_1 = p1.product_id
   JOIN products_cleaned p2 ON c.product_id_2 = p2.product_id
 ')
+
+top_co_occurrence
 
 # Reshape data for the heatmap
 co_occurrence_matrix <- reshape2::acast(top_co_occurrence, product_name_1 ~ product_name_2, value.var = "co_occurrence", fill = 0)
@@ -296,6 +307,8 @@ pie_data <- sqldf('
 # Calculate department popularity proportion against all departments
 pie_data$proportion <- pie_data$products_sold / sum(pie_data$products_sold)
 
+pie_data
+
 ggplot(pie_data, aes(x = "", y = proportion, fill = department)) +
   geom_bar(stat = "identity") +
   coord_polar("y") +
@@ -324,6 +337,8 @@ barchart_data <- sqldf('
   GROUP BY p.department, o.reordered
 ')
 
+head(barchart_data)
+
 ggplot(barchart_data, aes(x = reorder(department, -proportion * (reordered == 1)), y = proportion, fill = factor(reordered))) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("0" = "grey", "1" = "darkblue"), labels = c("Not Reordered", "Reordered")) +
@@ -350,8 +365,6 @@ hourly_sales <- "SELECT
     order_hour_of_day"
 sqldf(hourly_sales)
 
-
-#ggplot2 Scatterplot visualization
 #Finding amount of sales per hour each day
 hourly_orders_dow <- orders_cleaned %>%
   group_by(order_hour_of_day, order_dow) %>%
@@ -451,7 +464,6 @@ FROM (
 WHERE rank = 1"
 sqldf(top_item_per_department)
 
-#ggplot2 histogram visualization
 top_items_by_department <- order_products_train %>%
   group_by(product_id) %>%
   summarise(total_orders = n()) %>%
